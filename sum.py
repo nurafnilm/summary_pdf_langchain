@@ -24,7 +24,7 @@ except Exception as e:
     print(f"Error init model: {e}")
     exit(1)
 
-filepath = pathlib.Path("D:\\maganghub\\summarize_pdf\\pdf\\laporan_cuaca.pdf")
+filepath = pathlib.Path("D:\\maganghub\\summarize_pdf\\pdf\\artikel_bunga.pdf")
 if not filepath.exists():
     print(f"Error: File {filepath} tidak ditemukan! Cek path-nya.")
     exit(1)
