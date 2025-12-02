@@ -1,3 +1,4 @@
+# imports
 from fastapi import FastAPI, UploadFile, File, Query, HTTPException, Body
 from fastapi.responses import JSONResponse
 import tempfile
@@ -5,21 +6,20 @@ import os
 import shutil
 from pathlib import Path
 from dotenv import load_dotenv
-import google.generativeai as genai  # SDK untuk multimodal gambar
 import requests
+import base64
+import time
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.document_loaders import PyMuPDFLoader  # PyMuPDFLoader (support extract_images=True)
+from langchain_core.messages import HumanMessage
 
 # Load env
 load_dotenv()
 if "GOOGLE_API_KEY" not in os.environ:
     raise ValueError("Error: GOOGLE_API_KEY gak ditemukan di .env!")
 
-# LangChain imports untuk teks
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_core.messages import HumanMessage
-
-# Prompt template (plain string dengan placeholder, gak f-string)
-PROMPT_TEMPLATE = """Anda adalah seorang reviewer makalah akademik yang luar biasa. Anda melakukan ringkasan makalah pada teks makalah lengkap yang disediakan oleh pengguna, Deskripsikan gambar/diagram jika ada di pdf, dengan instruksi berikut:
+# Prompt template
+PROMPT_TEMPLATE = """Anda adalah seorang reviewer makalah akademik yang luar biasa. Anda melakukan ringkasan makalah pada teks makalah lengkap yang disajikan oleh pengguna. Deskripsikan gambar/diagram jika ada di pdf, dengan instruksi berikut:
 INSTRUKSI REVIEW:
 Ringkasan Pendekatan Teknis Makalah Akademik
 1. Judul dan Penulis Makalah: Berikan judul dan penulis makalah.
@@ -34,59 +34,86 @@ INSTRUKSI OUTPUT:
 2. Format output Anda dalam Markdown yang jelas dan mudah dibaca oleh manusia.
 3. Hanya output prompt tersebut, dan tidak ada yang lain, karena prompt tersebut mungkin dikirim langsung ke LLM.
 
-berikut dokumen lengkapnya: {full_text}"""
+berikut dokumen lengkapnya: {full_text}
 
-# Init SDK untuk gambar
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-model_sdk = genai.GenerativeModel("gemini-2.5-flash")
+Analisis juga seluruh gambar atau diagram yang disertakan sebagai bagian dari dokumen, taruh summarize terkait gambar sesuai dengan tempat konteks dokumennya."""
 
-app = FastAPI(title="PDF Summarizer API", description="Summarize PDF dengan Gemini – Teks (LangChain) + Gambar (SDK Multimodal)")
+# FAST API
+app = FastAPI(title="PDF Summarizer API", description="Summarize PDF dengan LangChain + PyMuPDFLoader (Teks + Gambar Multimodal)")
 
-# Init LangChain model untuk teks
+# Init LangChain model untuk multimodal
 try:
     llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.1)
 except Exception as e:
     raise HTTPException(status_code=500, detail=f"Error init model: {e}")
 
-def generate_image_descriptions(tmp_path: Path) -> str:
-    """Generate deskripsi gambar via SDK multimodal."""
-    try:
-        pdf_part = genai.upload_file(path=str(tmp_path), mime_type="application/pdf")
-        image_prompt = f"""Deskripsikan seluruh gambar/diagram di PDF ini secara akurat & singkat sesuai dengan isi konteks dokumen.
-                        Output hanya deskripsi, markdown."""
-        response = model_sdk.generate_content([image_prompt, pdf_part])
-        genai.delete_file(pdf_part.name)  # Cleanup
-        return response.text
-    except Exception as e:
-        return f"Fallback: Error deskripsi gambar - {e}. Gunakan teks-only."
+def collect_images_from_docs(docs):
+    """Collect all base64 images from document metadata."""
+    all_images = []
+    seen = set()  # Avoid duplicates
+    for doc in docs:
+        images = doc.metadata.get('images', [])
+        for img_b64 in images:
+            if img_b64 not in seen:
+                all_images.append(img_b64)
+                seen.add(img_b64)
+    return all_images
 
 def process_pdf(tmp_path: Path) -> dict:
-    """Function shared untuk process PDF (teks + gambar)."""
+    """Process PDF menggunakan PyMuPDFLoader (full teks + extract & encode gambar dari metadata)."""
     try:
-        # Step 1: Teks via LangChain
-        loader = PyPDFLoader(str(tmp_path))
+        # Step 1: Load PDF dengan PyMuPDFLoader (ekstrak teks + images sebagai base64 di metadata)
+        loader = PyMuPDFLoader(
+            str(tmp_path),
+            extract_images=True  # <-- Fixed: Hanya ini, images disimpan sebagai base64 di metadata['images']
+        )
         docs = loader.load()
         full_text = "\n\n".join([doc.page_content for doc in docs])
         
-        prompt = PROMPT_TEMPLATE.format(full_text=full_text)
+        # Step 2: Collect all images from metadata
+        all_images_b64 = collect_images_from_docs(docs)
         
-        message = HumanMessage(content=prompt)
-        text_response = llm.invoke([message])
-        text_summary = text_response.content
+        # Step 3: Siapkan multimodal message
+        message_content = [
+            {
+                "type": "text",
+                "text": PROMPT_TEMPLATE.format(full_text=full_text)
+            }
+        ]
         
-        # Step 2: Gambar via SDK
-        image_descriptions = generate_image_descriptions(tmp_path)
+        # Step 4: Tambah images sebagai base64 (PyMuPDF extract sebagai PNG)
+        for img_b64 in all_images_b64:
+            message_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{img_b64}"}
+            })
         
-        # Gabung
-        combined_summary = f"**Teks Summary:** {text_summary}\n\n**Gambar Descriptions:** {image_descriptions}"
+        # Step 5: Invoke LLM dengan multimodal content
+        message = HumanMessage(content=message_content)
+        response = llm.invoke([message])
+        summary = response.content
         
         return {
-            "combined_summary": combined_summary,
+            "summary": summary,
             "pages": len(docs),
-            "text_length": len(full_text)
+            "text_length": len(full_text),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error process: {e}")
+    finally:
+        pass
+
+def safe_unlink(path: Path, max_retries: int = 5):
+    """Retry unlink with delay to handle Windows file locking."""
+    for attempt in range(max_retries):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            if attempt < max_retries - 1:
+                time.sleep(1)  # Wait 1 second before retry
+            else:
+                print(f"Warning: Could not delete {path} after {max_retries} attempts.")
 
 @app.post("/summarize/upload")
 async def summarize_upload(file: UploadFile = File(..., description="Upload PDF")):
@@ -107,7 +134,7 @@ async def summarize_upload(file: UploadFile = File(..., description="Upload PDF"
         })
     
     finally:
-        tmp_path.unlink(missing_ok=True)
+        safe_unlink(tmp_path)  # Fixed: Retry unlink
 
 @app.post("/summarize/url")
 async def summarize_url(data: dict = Body(..., example={"url": "https://example.com/file.pdf"})):
@@ -115,8 +142,9 @@ async def summarize_url(data: dict = Body(..., example={"url": "https://example.
     if not url:
         raise HTTPException(status_code=400, detail="Harus ada 'url' di body JSON!")
     if not url.endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="URL harus PDF!")
-    
+        raise HTTPException(status_code=400, detail="File harus PDF!")
+
+
     # Download dari URL
     try:
         r = requests.get(url, stream=True)
@@ -138,8 +166,7 @@ async def summarize_url(data: dict = Body(..., example={"url": "https://example.
         raise HTTPException(status_code=400, detail=f"Error download URL: {e}")
     
     finally:
-        if 'tmp_path' in locals():
-            tmp_path.unlink(missing_ok=True)
+        safe_unlink(tmp_path)  # Fixed: Retry unlink
 
 @app.get("/health")
 async def health():
