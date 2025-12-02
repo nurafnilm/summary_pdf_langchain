@@ -35,12 +35,18 @@ Hasil summary pdf yang didapat ada di folder `hasil_summary` format `.txt`
 Hasil summary pdf ada di folder `hasil_summary`format `.json`
 
 ### Proses percobaan
+Akses link `http://127.0.0.1:8000/docs`
+<img width="1919" height="1012" alt="Screenshot 2025-12-02 113022" src="https://github.com/user-attachments/assets/aaa728ac-0603-45d0-9ed4-02b5fb3ba25a" />
+
 #### Upload PDF
-<img width="1920" height="1080" alt="Screenshot 2025-12-02 102620" src="https://github.com/user-attachments/assets/3f213a93-f370-4eba-858d-82d4a77ea735" />
-<img width="1920" height="1080" alt="Screenshot 2025-12-02 103821" src="https://github.com/user-attachments/assets/de61968b-5ee9-48a8-bef4-ff065eb2e941" />
-#### Upload Link
-<img width="1920" height="1080" alt="Screenshot 2025-12-02 110008" src="https://github.com/user-attachments/assets/cbe71786-a2f5-42bc-815b-0c64ef322f62" />
-<img width="1920" height="1080" alt="Screenshot 2025-12-02 110040" src="https://github.com/user-attachments/assets/03ef46fd-aee7-49e2-af28-ceff4714bf2c" />
+<img width="1919" height="1011" alt="Screenshot 2025-12-02 113235" src="https://github.com/user-attachments/assets/e220c1a1-8a6a-465b-b49d-edbba4b9c6a5" />
+<img width="1919" height="1011" alt="Screenshot 2025-12-02 113257" src="https://github.com/user-attachments/assets/e4d2a8ae-7c7f-4ee8-8fa9-23fd757a9d4b" />
+
+#### Upload URL
+<img width="1919" height="1013" alt="Screenshot 2025-12-02 113422" src="https://github.com/user-attachments/assets/f21f19b0-ce5d-4af4-9efe-b442c2ad5435" />
+<img width="1919" height="1015" alt="Screenshot 2025-12-02 113443" src="https://github.com/user-attachments/assets/cde6941b-f8b0-4266-b2fc-dc88172c9ac7" />
+
+
 
 
 
