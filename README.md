@@ -2,7 +2,7 @@
 
 Proyek buat summarize PDF pake Google Gemini via LangChain.
 
-## Fokus di summary teks saja
+## A. Fokus di summary teks saja
 Code Python ada di sum.py
 
 ### Setup
@@ -19,7 +19,7 @@ Code Python ada di sum.py
 Hasil summary pdf yang didapat ada di folder `hasil_summary` format `.txt`
 
 `update`
-### Ringkasan berbasis teks yang dibuat menggunakan LangChain, pemrosesan gambar melalui SDK Google Generative AI, serta integrasi backend dengan FastAPI.
+### B. Ringkasan berbasis teks yang dibuat menggunakan LangChain, pemrosesan gambar melalui SDK Google Generative AI, serta integrasi backend dengan FastAPI.
 
 ### Setup
 1. tambah `uv add fastapi uvicorn python-multipart requests`
@@ -45,6 +45,7 @@ Akses link `http://127.0.0.1:8000/docs`
 #### Upload URL
 <img width="1919" height="1013" alt="Screenshot 2025-12-02 113422" src="https://github.com/user-attachments/assets/f21f19b0-ce5d-4af4-9efe-b442c2ad5435" />
 <img width="1919" height="1015" alt="Screenshot 2025-12-02 113443" src="https://github.com/user-attachments/assets/cde6941b-f8b0-4266-b2fc-dc88172c9ac7" />
+
 
 
 
