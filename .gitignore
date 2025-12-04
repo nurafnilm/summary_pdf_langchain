@@ -11,3 +11,18 @@ wheels/
 
 # environment
 .env
+
+hasil_summary/
+node_modules/
+package-lock.json
+package.json
+pdf/prompt_sementara.txt
+
+# Temp / upload folders
+backend-go/temp/
+frontend-next/.next/
+frontend-next/node_modules/
+frontend-next/out/
+*.pdf
+uploads/
+temp/
