@@ -16,7 +16,7 @@ load_dotenv()
 if "GOOGLE_API_KEY" not in os.environ:
     raise ValueError("Error: GOOGLE_API_KEY gak ditemukan di .env!")
 
-# Prompt template (copy dari repo asli)
+# Prompt template
 PROMPT_TEMPLATE = """Anda adalah seorang reviewer makalah akademik yang luar biasa. Anda melakukan ringkasan makalah pada teks makalah lengkap yang disajikan oleh pengguna. Deskripsikan gambar/diagram jika ada di pdf, dengan instruksi berikut:
 INSTRUKSI REVIEW:
 Ringkasan Pendekatan Teknis Makalah Akademik
@@ -39,14 +39,14 @@ Analisis juga seluruh gambar atau diagram yang disertakan sebagai bagian dari do
 # Init Redis client
 r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True, health_check_interval=30)
 
-# Init LangChain model (global, biar efisien)
+# Init LangChain model
 try:
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.1)  # Ganti model kalau perlu
+    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.1) 
 except Exception as e:
     raise ValueError(f"Error init Gemini model: {e}")
 
 # Global DB connection
-conn = psycopg2.connect("host=localhost dbname=pdf_summary user=postgres password=pass123 port=5432")
+conn = psycopg2.connect("host=localhost dbname=pdf_summary user=[masukkan user] password=[masukkan password] port=5432")
 
 def collect_images_from_docs(docs):
     """Collect all base64 images from document metadata."""
@@ -108,7 +108,7 @@ def process_job():
         pdf_path = os.path.normpath(pdf_path)  # Fix backslash
         pdf_path = os.path.abspath(pdf_path)   # Buat full absolute
         print(f"Original path: {job_data['pdf_path']}")  # Debug
-        print(f"Normalized path: {pdf_path}")  # Debug - harus full D:\...
+        print(f"Normalized path: {pdf_path}")  
         
         # Cek file ada gak
         if not os.path.exists(pdf_path):

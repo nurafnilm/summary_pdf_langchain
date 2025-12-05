@@ -49,7 +49,7 @@ func initRedisAndDB() {
 	}
 	log.Println("Redis connected, queue key:", queueKey)
 
-	db, err = sql.Open("postgres", "host=localhost port=5432 user=postgres password=pass123 dbname=pdf_summary sslmode=disable")
+	db, err = sql.Open("postgres", "host=localhost port=5432 user=[masukkan user] password=[masukkan password] dbname=pdf_summary sslmode=disable")
 	if err != nil {
 		log.Fatalf("Failed to connect DB: %v", err)
 	}
